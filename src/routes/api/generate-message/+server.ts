@@ -23,6 +23,7 @@ import { md } from '$lib/utils/markdown-it.js';
 import * as array from '$lib/utils/array';
 import { parseMessageForRules } from '$lib/utils/rules.js';
 import { performNanoGPTWebSearch } from '$lib/backend/web-search';
+import { scrapeUrlsFromMessage } from '$lib/backend/url-scraper';
 
 // Set to true to enable debug logging
 const ENABLE_LOGGING = true;
@@ -229,6 +230,20 @@ async function generateAIResponse({
 		}
 	}
 
+	// Scrape URLs from the user message if any are present
+	let scrapedContent: string = '';
+	if (lastUserMessage) {
+		log('Background: Checking for URLs to scrape', startTime);
+		try {
+			scrapedContent = await scrapeUrlsFromMessage(lastUserMessage.content, apiKey);
+			if (scrapedContent) {
+				log('Background: URL scraping completed', startTime);
+			}
+		} catch (e) {
+			log(`Background: URL scraping failed: ${e}`, startTime);
+		}
+	}
+
 	// Create assistant message
 	const assistantMessageId = generateId();
 	const now = new Date();
@@ -346,6 +361,11 @@ async function generateAIResponse({
 
 	// Construct system message content
 	let systemContent = '';
+
+	// Add scraped URL content first (if any)
+	if (scrapedContent) {
+		systemContent += scrapedContent;
+	}
 
 	if (searchContext) {
 		systemContent += `${searchContext}\n\nInstructions: Use the above search results to answer the user's query. Cite your sources where possible. If the results are not relevant, you can ignore them.\n\n`;
