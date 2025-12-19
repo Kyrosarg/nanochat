@@ -29,13 +29,7 @@
 		disabled: true,
 	});
 
-	const freeModelsToggle = new Toggle({
-		value: false,
-	});
 
-	const reasoningModelsToggle = new Toggle({
-		value: false,
-	});
 
 
 
@@ -52,13 +46,7 @@
 	const nanoGPTModels = $derived(
 		fuzzysearch({
 			haystack: models.from(Provider.NanoGPT).filter((m) => {
-				if (freeModelsToggle.value) {
-					if (m.pricing?.prompt !== '0') return false;
-				}
 
-				if (reasoningModelsToggle.value) {
-					if (!supportsReasoning(m)) return false;
-				}
 
 
 
@@ -97,24 +85,7 @@
 			<XIcon class="inline size-3 group-aria-[pressed=false]:hidden" />
 			<PlusIcon class="inline size-3 group-aria-[pressed=true]:hidden" />
 		</button>
-		<button
-			{...freeModelsToggle.trigger}
-			aria-label="Free Models"
-			class="group text-primary-foreground bg-primary aria-[pressed=false]:border-border border-primary aria-[pressed=false]:bg-background flex place-items-center gap-1 rounded-full border px-2 py-1 text-xs transition-all disabled:cursor-not-allowed disabled:opacity-50"
-		>
-			Free
-			<XIcon class="inline size-3 group-aria-[pressed=false]:hidden" />
-			<PlusIcon class="inline size-3 group-aria-[pressed=true]:hidden" />
-		</button>
-		<button
-			{...reasoningModelsToggle.trigger}
-			aria-label="Reasoning Models"
-			class="group text-primary-foreground bg-primary aria-[pressed=false]:border-border border-primary aria-[pressed=false]:bg-background flex place-items-center gap-1 rounded-full border px-2 py-1 text-xs transition-all disabled:cursor-not-allowed disabled:opacity-50"
-		>
-			Reasoning
-			<XIcon class="inline size-3 group-aria-[pressed=false]:hidden" />
-			<PlusIcon class="inline size-3 group-aria-[pressed=true]:hidden" />
-		</button>
+
 
 	</div>
 </div>
