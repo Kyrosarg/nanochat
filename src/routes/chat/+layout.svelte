@@ -97,16 +97,14 @@
 		if (currentId && currentId !== previousAssistantId && assistant) {
 			previousAssistantId = currentId;
 			
-			// Apply defaults if configured
+			// Apply model if configured (don't reset model if not configured)
 			if (assistant.defaultModelId) {
 				settings.modelId = assistant.defaultModelId;
 			}
-			if (assistant.defaultWebSearchMode) {
-				settings.webSearchMode = assistant.defaultWebSearchMode as 'off' | 'standard' | 'deep';
-			}
-			if (assistant.defaultWebSearchProvider) {
-				settings.webSearchProvider = assistant.defaultWebSearchProvider as 'linkup' | 'tavily';
-			}
+			
+			// Apply search settings - reset to defaults if not configured
+			settings.webSearchMode = (assistant.defaultWebSearchMode as 'off' | 'standard' | 'deep') || 'off';
+			settings.webSearchProvider = (assistant.defaultWebSearchProvider as 'linkup' | 'tavily') || 'linkup';
 		}
 	});
 
