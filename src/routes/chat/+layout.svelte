@@ -155,6 +155,7 @@
 				model_id: settings.modelId,
 				images: imagesCopy.length > 0 ? imagesCopy : undefined,
 				web_search_mode: settings.webSearchMode,
+				web_search_provider: settings.webSearchProvider,
 				assistant_id: selectedAssistantId.current || undefined,
 				reasoning_effort: currentModelSupportsReasoning ? settings.reasoningEffort : undefined,
 			});
@@ -777,6 +778,26 @@
 											{/snippet}
 											{settings.webSearchMode === 'off' ? 'Web Search: Off' : settings.webSearchMode === 'standard' ? 'Web Search: Standard ($0.006)' : 'Web Search: Deep ($0.06)'}
 										</Tooltip>
+										{#if settings.webSearchMode !== 'off'}
+											<Tooltip>
+												{#snippet trigger(tooltip)}
+													<button
+														type="button"
+														class={cn(
+															'bg-secondary/50 hover:bg-secondary text-muted-foreground flex h-8 items-center justify-center rounded-lg px-2 text-xs font-medium transition-colors',
+															settings.webSearchProvider === 'tavily' && 'bg-purple-500/20 text-purple-400'
+														)}
+														onclick={() => {
+															settings.webSearchProvider = settings.webSearchProvider === 'linkup' ? 'tavily' : 'linkup';
+														}}
+														{...tooltip.trigger}
+													>
+														{settings.webSearchProvider === 'linkup' ? 'Linkup' : 'Tavily'}
+													</button>
+												{/snippet}
+												{settings.webSearchProvider === 'linkup' ? 'Using Linkup (default). Click to switch to Tavily.' : 'Using Tavily. Click to switch to Linkup.'}
+											</Tooltip>
+										{/if}
 										{#if currentModelSupportsImages}
 											<button
 												type="button"

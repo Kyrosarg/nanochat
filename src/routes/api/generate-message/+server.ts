@@ -43,6 +43,7 @@ const reqBodySchema = z
 		conversation_id: z.string().optional(),
 		web_search_enabled: z.boolean().optional(),
 		web_search_mode: z.enum(['off', 'standard', 'deep']).optional(),
+		web_search_provider: z.enum(['linkup', 'tavily']).optional(),
 		images: z
 			.array(
 				z.object({
@@ -194,6 +195,7 @@ async function generateAIResponse({
 	abortSignal,
 	reasoningEffort,
 	webSearchDepth,
+	webSearchProvider,
 }: {
 	conversationId: string;
 	userId: string;
@@ -205,6 +207,7 @@ async function generateAIResponse({
 	abortSignal?: AbortSignal;
 	reasoningEffort?: 'low' | 'medium' | 'high';
 	webSearchDepth?: 'standard' | 'deep';
+	webSearchProvider?: 'linkup' | 'tavily';
 }) {
 	log('Starting AI response generation in background', startTime);
 
@@ -225,7 +228,16 @@ async function generateAIResponse({
 	const lastUserMessage = conversationMessages.filter((m) => m.role === 'user').pop();
 	const webSearchEnabled = lastUserMessage?.webSearchEnabled ?? false;
 
-	const modelId = model.modelId;
+	// Determine if we're using Tavily (model suffix) or Linkup (separate API)
+	const useTavily = webSearchEnabled && webSearchProvider === 'tavily';
+
+	// When using Tavily, append the suffix to the model ID
+	let modelId = model.modelId;
+	if (useTavily && webSearchDepth) {
+		const tavilySuffix = webSearchDepth === 'deep' ? ':online/tavily-deep' : ':online/tavily';
+		modelId = `${model.modelId}${tavilySuffix}`;
+		log(`Background: Using Tavily web search via model suffix: ${modelId}`, startTime);
+	}
 
 	// Fetch persistent memory if enabled
 	let storedMemory: string | null = null;
@@ -242,18 +254,18 @@ async function generateAIResponse({
 		}
 	}
 
-	// Perform web search if enabled
+	// Perform web search if enabled (only for Linkup, Tavily uses model suffix)
 	let searchContext: string | null = null;
 	let webSearchCost = 0;
-	if (webSearchEnabled && lastUserMessage) {
-		log('Background: Performing web search', startTime);
+	if (webSearchEnabled && lastUserMessage && !useTavily) {
+		log('Background: Performing Linkup web search', startTime);
 		try {
 			const depth = webSearchDepth ?? 'standard';
 			searchContext = await performNanoGPTWebSearch(lastUserMessage.content, apiKey, depth);
 			webSearchCost = depth === 'deep' ? 0.06 : 0.006;
-			log(`Background: Web search completed ($${webSearchCost})`, startTime);
+			log(`Background: Linkup web search completed ($${webSearchCost})`, startTime);
 		} catch (e) {
-			log(`Background: Web search failed: ${e}`, startTime);
+			log(`Background: Linkup web search failed: ${e}`, startTime);
 		}
 	}
 
@@ -1294,6 +1306,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			abortSignal: abortController.signal,
 			reasoningEffort: args.reasoning_effort,
 			webSearchDepth: args.web_search_mode && args.web_search_mode !== 'off' ? args.web_search_mode : undefined,
+			webSearchProvider: args.web_search_provider,
 		})
 			.catch(async (error) => {
 				log(`Background AI response generation error: ${error}`, startTime);
