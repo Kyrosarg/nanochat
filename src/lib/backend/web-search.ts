@@ -53,15 +53,21 @@ export async function performNanoGPTWebSearch(
             return "No search results found.";
         }
 
-        // Format results for the LLM
+        // Format results for the LLM with markdown
         const formattedResults = json.data
             .filter((item) => item.type === 'text') // Focus on text results for now
             .map((item, index) => {
-                return `[${index + 1}] ${item.title}\nURL: ${item.url}\nContent: ${item.content || item.snippet || ''}`;
+                return `### [${index + 1}] ${item.title}\n**URL:** ${item.url}\n\n${item.content || item.snippet || ''}`;
             })
-            .join('\n\n');
+            .join('\n\n---\n\n');
 
-        return `Search Results for "${query}":\n\n${formattedResults}`;
+        // Format references as a markdown list for better rendering
+        const references = json.data
+            .filter((item) => item.type === 'text')
+            .map((item) => `- [${item.title}](${item.url})`)
+            .join('\n');
+
+        return `Search Results for "${query}":\n\n${formattedResults}\n\n## References\n\n${references}`;
     } catch (error) {
         return `Failed to perform web search: ${error}`;
     }

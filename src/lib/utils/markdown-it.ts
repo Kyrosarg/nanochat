@@ -3,7 +3,9 @@ import { h } from 'hastscript';
 import MarkdownItAsync from 'markdown-it-async';
 import { codeToHtml } from 'shiki';
 
-const md = MarkdownItAsync();
+const md = MarkdownItAsync({
+	linkify: true,
+});
 
 md.use(
 	fromAsyncCodeToHtml(
@@ -83,6 +85,20 @@ md.use(
 		}
 	)
 );
+
+// Make external links open in new tab
+const defaultLinkOpen = md.renderer.rules.link_open || function (tokens: any[], idx: number, options: any, _env: any, self: any) {
+	return self.renderToken(tokens, idx, options);
+};
+
+md.renderer.rules.link_open = function (tokens: any[], idx: number, options: any, env: any, self: any) {
+	const href = tokens[idx].attrGet('href');
+	if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+		tokens[idx].attrPush(['target', '_blank']);
+		tokens[idx].attrPush(['rel', 'noopener noreferrer']);
+	}
+	return defaultLinkOpen(tokens, idx, options, env, self);
+};
 
 function sanitizeHtml(html: string) {
 	return html;
