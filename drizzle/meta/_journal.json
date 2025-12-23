@@ -99,6 +99,13 @@
       "when": 1766497934552,
       "tag": "0013_add_daily_message_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1766506984679,
+      "tag": "0014_bumpy_living_tribunal",
+      "breakpoints": true
     }
   ]
 }
