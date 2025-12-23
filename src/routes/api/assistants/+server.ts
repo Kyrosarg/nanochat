@@ -43,7 +43,7 @@ const createAssistantSchema = z.object({
     systemPrompt: z.string().max(10000),
     defaultModelId: z.string().optional(),
     defaultWebSearchMode: z.enum(['off', 'standard', 'deep']).optional(),
-    defaultWebSearchProvider: z.enum(['linkup', 'tavily']).optional(),
+    defaultWebSearchProvider: z.enum(['linkup', 'tavily', 'exa', 'kagi']).optional(),
 });
 
 export async function POST({ request, locals }: RequestEvent) {

@@ -2,12 +2,12 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { useCachedQuery, api, invalidateQueryPattern } from '$lib/cache/cached-query.svelte.js';
-import { extractUrlsByType } from '$lib/backend/url-scraper';
+	import { extractUrlsByType } from '$lib/backend/url-scraper';
 	import type { Doc, Id } from '$lib/db/types';
 	import AppSidebar from '$lib/components/app-sidebar.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { ImageModal } from '$lib/components/ui/image-modal';
-import { DocumentModal } from '$lib/components/ui/document-modal';
+	import { DocumentModal } from '$lib/components/ui/document-modal';
 	import { LightSwitch } from '$lib/components/ui/light-switch/index.js';
 	import { ShareButton } from '$lib/components/ui/share-button';
 	import { ExportButton } from '$lib/components/ui/export-button';
@@ -20,9 +20,13 @@ import { DocumentModal } from '$lib/components/ui/document-modal';
 	import { session } from '$lib/state/session.svelte.js';
 	import { settings } from '$lib/state/settings.svelte.js';
 	import { Provider } from '$lib/types';
-import { compressImage } from '$lib/utils/image-compression';
-import { supportsImages, supportsReasoning, supportsDocuments } from '$lib/utils/model-capabilities';
-import { validateFiles, getFileType } from '$lib/utils/file-validation';
+	import { compressImage } from '$lib/utils/image-compression';
+	import {
+		supportsImages,
+		supportsReasoning,
+		supportsDocuments,
+	} from '$lib/utils/model-capabilities';
+	import { validateFiles, getFileType } from '$lib/utils/file-validation';
 	import { omit, pick } from '$lib/utils/object.js';
 	import { cn } from '$lib/utils/utils.js';
 	import { mutate } from '$lib/client/mutation.svelte';
@@ -36,9 +40,9 @@ import { validateFiles, getFileType } from '$lib/utils/file-validation';
 	import SearchIcon from '~icons/lucide/search';
 	import Settings2Icon from '~icons/lucide/settings-2';
 	import StopIcon from '~icons/lucide/square';
-import UploadIcon from '~icons/lucide/upload';
-import XIcon from '~icons/lucide/x';
-import PaperclipIcon from '~icons/lucide/paperclip';
+	import UploadIcon from '~icons/lucide/upload';
+	import XIcon from '~icons/lucide/x';
+	import PaperclipIcon from '~icons/lucide/paperclip';
 	import { callCancelGeneration } from '../api/cancel-generation/call.js';
 	import { callGenerateMessage } from '../api/generate-message/call.js';
 	import { ModelPicker } from '$lib/components/model-picker';
@@ -116,7 +120,7 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 			settings.webSearchMode =
 				(assistant.defaultWebSearchMode as 'off' | 'standard' | 'deep') || 'off';
 			settings.webSearchProvider =
-				(assistant.defaultWebSearchProvider as 'linkup' | 'tavily' | 'exa') || 'linkup';
+				(assistant.defaultWebSearchProvider as 'linkup' | 'tavily' | 'exa' | 'kagi') || 'linkup';
 		}
 	});
 
@@ -174,16 +178,22 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 	const transcriptsEnabled = $derived(userSettings.data?.youtubeTranscriptsEnabled ?? false);
 
 	// Import messages API to check for YouTube URLs
-	const messages = useCachedQuery(api.messages.getAllFromConversation, () => ({
-		conversationId: page.params.id ?? '',
-	}));
+	const messages = useCachedQuery(
+		api.messages.getAllFromConversation,
+		() => ({
+			conversationId: page.params.id ?? '',
+		}),
+		{
+			enabled: !!page.params.id,
+		}
+	);
 
 	// Check for YouTube URLs in the last user message
 	$effect(() => {
 		if (messages.data) {
-			const userMessages = messages.data.filter(m => m.role === 'user');
+			const userMessages = messages.data.filter((m) => m.role === 'user');
 			const lastUserMessage = userMessages[userMessages.length - 1];
-			
+
 			if (lastUserMessage) {
 				const { youtubeUrls } = extractUrlsByType(lastUserMessage.content);
 				youtubeUrlDetected = youtubeUrls.length > 0;
@@ -306,7 +316,9 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 		},
 	});
 	let selectedImages = $state<{ url: string; storage_id: string; fileName?: string }[]>([]);
-	let selectedDocuments = $state<{ url: string; storage_id: string; fileName?: string; fileType: 'pdf' | 'markdown' | 'text' }[]>([]);
+	let selectedDocuments = $state<
+		{ url: string; storage_id: string; fileName?: string; fileType: 'pdf' | 'markdown' | 'text' }[]
+	>([]);
 	let isUploading = $state(false);
 	let isUploadingDocuments = $state(false);
 	let fileInput = $state<HTMLInputElement>();
@@ -317,7 +329,13 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 		fileName: '',
 	});
 
-	let documentModal = $state<{ open: boolean; documentUrl: string; fileName: string; fileType: 'pdf' | 'markdown' | 'text'; content: string }>({
+	let documentModal = $state<{
+		open: boolean;
+		documentUrl: string;
+		fileName: string;
+		fileType: 'pdf' | 'markdown' | 'text';
+		content: string;
+	}>({
 		open: false,
 		documentUrl: '',
 		fileName: '',
@@ -347,7 +365,7 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 		// For now, always show document support for testing
 		// TODO: Make this model-specific when models are properly configured
 		return true;
-		
+
 		// Original logic (commented out for testing):
 		// if (!settings.modelId) return false;
 		// const nanoGPTModels = models.from(Provider.NanoGPT);
@@ -418,12 +436,17 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 		if (!files.length || !session.current?.session.token) return;
 
 		isUploadingDocuments = true;
-		const uploadedFiles: { url: string; storage_id: string; fileName?: string; fileType: 'pdf' | 'markdown' | 'text' }[] = [];
+		const uploadedFiles: {
+			url: string;
+			storage_id: string;
+			fileName?: string;
+			fileType: 'pdf' | 'markdown' | 'text';
+		}[] = [];
 
 		try {
 			// Validate files
 			const validation = validateFiles(files, ['pdf', 'markdown', 'text']);
-			
+
 			if (validation.errors.length > 0) {
 				console.error('File validation errors:', validation.errors);
 				// TODO: Show user-friendly error messages
@@ -478,9 +501,13 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 		};
 	}
 
-	async function openDocumentModal(documentUrl: string, fileName: string, fileType: 'pdf' | 'markdown' | 'text') {
+	async function openDocumentModal(
+		documentUrl: string,
+		fileName: string,
+		fileType: 'pdf' | 'markdown' | 'text'
+	) {
 		let content = '';
-		
+
 		// For text and markdown files, fetch the content
 		if (fileType === 'markdown' || fileType === 'text') {
 			try {
@@ -657,7 +684,7 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 	bind:open={sidebarOpen}
 	class="bg-sidebar fill-device-height overflow-clip"
 	{...currentModelSupportsImages ? omit(fileUpload.dropzone, ['onclick']) : {}}
-		{...omit(documentUpload.dropzone, ['onclick'])}
+	{...omit(documentUpload.dropzone, ['onclick'])}
 >
 	<AppSidebar bind:searchModalOpen />
 
@@ -785,7 +812,9 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 						{#if youtubeUrlDetected && !transcriptsEnabled}
 							<div
 								in:fade={{ duration: 150 }}
-								class="bg-background absolute top-0 left-0 {error ? '-translate-y-20' : '-translate-y-12'} rounded-lg"
+								class="bg-background absolute top-0 left-0 {error
+									? '-translate-y-20'
+									: '-translate-y-12'} rounded-lg"
 							>
 								<div class="rounded-lg bg-yellow-500/50 px-3 py-1 text-sm text-yellow-100">
 									YouTube transcripts are disabled. Enable in Settings to include video content.
@@ -860,8 +889,13 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 										>
 											<button
 												type="button"
-												onclick={() => openDocumentModal(document.url, document.fileName || 'document', document.fileType)}
-												class="flex size-full flex-col items-center justify-center rounded-lg bg-secondary/50 transition-opacity hover:opacity-80"
+												onclick={() =>
+													openDocumentModal(
+														document.url,
+														document.fileName || 'document',
+														document.fileType
+													)}
+												class="bg-secondary/50 flex size-full flex-col items-center justify-center rounded-lg transition-opacity hover:opacity-80"
 											>
 												{#if document.fileType === 'pdf'}
 													<span class="text-2xl">📄</span>
@@ -874,7 +908,7 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 											<button
 												type="button"
 												onclick={() => removeDocument(index)}
-												class="bg-destructive text-destructive-foreground absolute -top-1.5 -right-1.5 cursor-pointer rounded-full p-1 opacity-0 transition group-hover:opacity-100 shadow-sm"
+												class="bg-destructive text-destructive-foreground absolute -top-1.5 -right-1.5 cursor-pointer rounded-full p-1 opacity-0 shadow-sm transition group-hover:opacity-100"
 											>
 												<XIcon class="h-3 w-3" />
 											</button>
@@ -1013,13 +1047,17 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 																settings.webSearchProvider === 'tavily' &&
 																	'bg-purple-500/20 text-purple-400',
 																settings.webSearchProvider === 'exa' &&
-																	'bg-blue-500/20 text-blue-400'
+																	'bg-blue-500/20 text-blue-400',
+																settings.webSearchProvider === 'kagi' &&
+																	'bg-yellow-500/20 text-yellow-500'
 															)}
 															onclick={() => {
 																if (settings.webSearchProvider === 'linkup')
 																	settings.webSearchProvider = 'tavily';
 																else if (settings.webSearchProvider === 'tavily')
 																	settings.webSearchProvider = 'exa';
+																else if (settings.webSearchProvider === 'exa')
+																	settings.webSearchProvider = 'kagi';
 																else settings.webSearchProvider = 'linkup';
 															}}
 															{...tooltip.trigger}
@@ -1028,14 +1066,18 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 																? 'Linkup'
 																: settings.webSearchProvider === 'tavily'
 																	? 'Tavily'
-																	: 'Exa'}
+																	: settings.webSearchProvider === 'exa'
+																		? 'Exa'
+																		: 'Kagi'}
 														</button>
 													{/snippet}
 													{settings.webSearchProvider === 'linkup'
 														? 'Using Linkup (default). Click to switch.'
 														: settings.webSearchProvider === 'tavily'
 															? 'Using Tavily. Click to switch.'
-															: 'Using Exa. Click to switch.'}
+															: settings.webSearchProvider === 'exa'
+																? 'Using Exa. Click to switch.'
+																: 'Using Kagi. Click to switch.'}
 												</Tooltip>
 											{/if}
 										{/if}
@@ -1121,7 +1163,9 @@ import PaperclipIcon from '~icons/lucide/paperclip';
 			<div class="text-center">
 				<UploadIcon class="text-primary mx-auto mb-4 h-16 w-16" />
 				<p class="text-xl font-semibold">Add files</p>
-				<p class="mt-2 text-sm opacity-75">Drop images or documents (PDF, Markdown, Text) here to attach them to your message.</p>
+				<p class="mt-2 text-sm opacity-75">
+					Drop images or documents (PDF, Markdown, Text) here to attach them to your message.
+				</p>
 			</div>
 		</div>
 	{/if}

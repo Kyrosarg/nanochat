@@ -252,7 +252,7 @@ export const assistants = sqliteTable('assistants', {
     isDefault: integer('is_default', { mode: 'boolean' }).notNull().default(false),
     defaultModelId: text('default_model_id'),
     defaultWebSearchMode: text('default_web_search_mode'), // 'off' | 'standard' | 'deep'
-    defaultWebSearchProvider: text('default_web_search_provider'), // 'linkup' | 'tavily'
+    defaultWebSearchProvider: text('default_web_search_provider'), // 'linkup' | 'tavily' | 'exa' | 'kagi'
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 }, (table) => [

@@ -51,7 +51,7 @@ const reqBodySchema = z
 		conversation_id: z.string().optional(),
 		web_search_enabled: z.boolean().optional(),
 		web_search_mode: z.enum(['off', 'standard', 'deep']).optional(),
-		web_search_provider: z.enum(['linkup', 'tavily', 'exa']).optional(),
+		web_search_provider: z.enum(['linkup', 'tavily', 'exa', 'kagi']).optional(),
 		images: z
 			.array(
 				z.object({
@@ -224,7 +224,7 @@ async function generateAIResponse({
 	abortSignal?: AbortSignal;
 	reasoningEffort?: 'low' | 'medium' | 'high';
 	webSearchDepth?: 'standard' | 'deep';
-	webSearchProvider?: 'linkup' | 'tavily' | 'exa';
+	webSearchProvider?: 'linkup' | 'tavily' | 'exa' | 'kagi';
 	webFeaturesDisabled?: boolean;
 }) {
 	log('Starting AI response generation in background', startTime);
@@ -247,11 +247,12 @@ async function generateAIResponse({
 	const lastUserMessage = conversationMessages.filter((m) => m.role === 'user').pop();
 	const webSearchEnabled = webFeaturesDisabled ? false : (lastUserMessage?.webSearchEnabled ?? false);
 
-	// Determine if we're using Tavily or Exa (model suffix) or Linkup (separate API)
+	// Determine if we're using Tavily, Exa, or Kagi (model suffix) or Linkup (separate API)
 	const useTavily = webSearchEnabled && webSearchProvider === 'tavily';
 	const useExa = webSearchEnabled && webSearchProvider === 'exa';
+	const useKagi = webSearchEnabled && webSearchProvider === 'kagi';
 
-	// When using Tavily or Exa, append the suffix to the model ID
+	// When using Tavily, Exa, or Kagi, append the suffix to the model ID
 	let modelId = model.modelId;
 	if (useTavily && webSearchDepth) {
 		const tavilySuffix = webSearchDepth === 'deep' ? ':online/tavily-deep' : ':online/tavily';
@@ -261,6 +262,10 @@ async function generateAIResponse({
 		const exaSuffix = webSearchDepth === 'deep' ? ':online/exa-deep' : ':online/exa-fast';
 		modelId = `${model.modelId}${exaSuffix}`;
 		log(`Background: Using Exa web search via model suffix: ${modelId}`, startTime);
+	} else if (useKagi && webSearchDepth) {
+		const kagiSuffix = webSearchDepth === 'deep' ? ':online/kagi-search' : ':online/kagi';
+		modelId = `${model.modelId}${kagiSuffix}`;
+		log(`Background: Using Kagi web search via model suffix: ${modelId}`, startTime);
 	}
 
 	// Fetch persistent memory if enabled
@@ -296,7 +301,7 @@ async function generateAIResponse({
 		log(`Background: Exa web search cost: $${webSearchCost}`, startTime);
 	}
 
-	if (webSearchEnabled && lastUserMessage && !useTavily && !useExa) {
+	if (webSearchEnabled && lastUserMessage && !useTavily && !useExa && !useKagi) {
 		log('Background: Performing Linkup web search', startTime);
 		try {
 			const depth = webSearchDepth ?? 'standard';
@@ -648,12 +653,12 @@ ${attachedRules.map((r) => `- ${r.name}: ${r.rule}`).join('\n')}`;
 	const messagesToSend =
 		systemContent.length > 0
 			? [
-					...finalMessages,
-					{
-						role: 'system' as const,
-						content: systemContent,
-					},
-				]
+				...finalMessages,
+				{
+					role: 'system' as const,
+					content: systemContent,
+				},
+			]
 			: finalMessages;
 
 	if (abortSignal?.aborted) {

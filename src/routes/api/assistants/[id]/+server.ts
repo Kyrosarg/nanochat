@@ -9,7 +9,7 @@ const updateAssistantSchema = z.object({
     systemPrompt: z.string().max(10000).optional(),
     defaultModelId: z.string().nullable().optional(),
     defaultWebSearchMode: z.enum(['off', 'standard', 'deep']).nullable().optional(),
-    defaultWebSearchProvider: z.enum(['linkup', 'tavily']).nullable().optional(),
+    defaultWebSearchProvider: z.enum(['linkup', 'tavily', 'exa', 'kagi']).nullable().optional(),
 });
 
 export async function PATCH({ request, locals, params }: RequestEvent) {
