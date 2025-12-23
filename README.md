@@ -24,7 +24,7 @@
 - Nano-GPT Video Generation
 - Selectable System Prompts (Assistants)
 - KaraKeep Integration (Thanks to <a href="https://github.com/jcrabapple">jcrabapple</a>) 
-
+- Nano-GPT YouTube Transcripts (Thanks to <a href="https://github.com/thejudge22">thejudge22</a>)
 ## Setup (Docker)
 
 ### Installation
