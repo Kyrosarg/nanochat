@@ -101,7 +101,7 @@
 	);
 
 	// Apply assistant defaults when switching assistants
-	let previousAssistantId = $state<string | null>(null);
+	let previousAssistantId = $state<string | null>(selectedAssistantId.current);
 
 	$effect(() => {
 		const currentId = selectedAssistantId.current;
