@@ -20,7 +20,7 @@
 	"devDependencies": {
 		"@eslint/compat": "^2.0.0",
 		"@eslint/js": "^9.39.2",
-		"@iconify/json": "^2.2.422",
+		"@iconify/json": "^2.2.423",
 		"@playwright/test": "^1.57.0",
 		"@shikijs/langs": "^3.20.0",
 		"@shikijs/markdown-it": "^3.20.0",
@@ -90,6 +90,6 @@
 		"markdown-it-async": "^2.2.0",
 		"pdf-parse": "^2.4.5",
 		"svelte-sonner": "^1.0.7",
-		"zod": "^4.2.1"
+		"zod": "^4.3.2"
 	}
 }
